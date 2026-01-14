@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #fbfbfd;
+  overflow-x: hidden;
+}
+
+/* 弥散背景动画 */
+@keyframes float {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+.animate-float {
+  animation: float 20s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 25s ease-in-out infinite reverse;
+}
+
+/* 高级毛玻璃 - Light */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05);
+}
+
+.glass-sidebar {
+  background: rgba(245, 245, 247, 0.8);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* 高级毛玻璃 - Dark */
+.glass-panel-dark {
+  background: rgba(28, 28, 30, 0.65);
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+  color: #f5f5f7;
+}
+
+.glass-sidebar-dark {
+  background: rgba(28, 28, 30, 0.8);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f5f5f7;
+}
+
+/* 隐藏滚动条但保持功能 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

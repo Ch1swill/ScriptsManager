@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+apscheduler
+sqlalchemy
+pydantic-settings
+python-multipart
+httpx
+aiosqlite
+websockets
+webdavclient3
