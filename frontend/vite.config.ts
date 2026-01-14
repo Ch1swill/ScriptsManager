@@ -19,10 +19,10 @@ export default defineConfig({
       mangle: {
         // 混淆变量名
         toplevel: true,
-        // 混淆属性名（谨慎使用）
-        properties: {
-          regex: /^_/,  // 只混淆下划线开头的私有属性
-        },
+        // 禁用属性混淆（容易与第三方库冲突）
+        // properties: {
+        //   regex: /^_/,
+        // },
       },
       format: {
         // 删除注释
