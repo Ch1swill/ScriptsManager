@@ -204,10 +204,21 @@ class TelegramBot:
             await self.send_message(f"⚠️ *异常警报：* 发现 {len(issues)} 个常驻脚本已失效。" )
 
     async def show_script_log(self, script_id):
-        log_path = f"/data/logs/{script_id}.log"
+        import os
+
+        # 从数据库获取脚本路径
+        db = database.SessionLocal()
+        try:
+            script = db.query(models.Script).filter(models.Script.id == script_id).first()
+            if not script:
+                await self.send_message("❌ 脚本不存在。")
+                return
+            log_path = scheduler.get_log_path(script.path)
+        finally:
+            db.close()
+
         content = "🏮 尚未产生日志文件。"
         try:
-            import os
             if os.path.exists(log_path):
                 try:
                     with open(log_path, "r", encoding="utf-8", errors="replace") as f:

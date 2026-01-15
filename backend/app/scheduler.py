@@ -15,6 +15,20 @@ logger = logging.getLogger(__name__)
 # 全局字典存储运行中的进程: script_id -> subprocess.Process
 RUNNING_TASKS = {}
 
+# 日志目录
+LOG_DIR = "/data/logs"
+
+def get_log_filename(script_path: str) -> str:
+    """根据脚本路径生成日志文件名（使用脚本文件名，去掉扩展名）"""
+    basename = os.path.basename(script_path)
+    name_without_ext = os.path.splitext(basename)[0]
+    return f"{name_without_ext}.log"
+
+def get_log_path(script_path: str) -> str:
+    """获取脚本对应的日志文件完整路径"""
+    os.makedirs(LOG_DIR, exist_ok=True)
+    return os.path.join(LOG_DIR, get_log_filename(script_path))
+
 async def notify_telegram(message: str, bot_token: str, chat_id: str):
     if not bot_token or not chat_id:
         return
@@ -88,10 +102,8 @@ async def stop_script(script_id: int):
         return False
 
 async def run_script(script_id: int, script_path: str, script_name: str, bot_token: str = None, chat_id: str = None, arguments: str = None, is_daemon: bool = False):
-    # 准备日志文件 - 尽早创建，确保能记录所有错误
-    log_dir = "/data/logs"
-    os.makedirs(log_dir, exist_ok=True)
-    log_file_path = os.path.join(log_dir, f"{script_id}.log")
+    # 准备日志文件 - 使用脚本文件名作为日志名
+    log_file_path = get_log_path(script_path)
     start_time = datetime.datetime.now()
 
     # 立即创建/更新日志文件，记录启动信息
@@ -155,8 +167,8 @@ async def run_script(script_id: int, script_path: str, script_name: str, bot_tok
         
         RUNNING_TASKS[script_id] = process
 
-        # 检查日志文件大小，如果超过 2MB 则截断（保留最后一部分或清空，简单起见清空旧的）
-        if os.path.exists(log_file_path) and os.path.getsize(log_file_path) > 2 * 1024 * 1024:
+        # 检查日志文件大小，如果超过 1MB 则截断清理旧日志
+        if os.path.exists(log_file_path) and os.path.getsize(log_file_path) > 1 * 1024 * 1024:
             with open(log_file_path, "w") as f:
                 f.write(f"=== Log rotated at {start_time} ===\n")
 
