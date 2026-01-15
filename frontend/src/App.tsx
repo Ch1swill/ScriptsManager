@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Terminal, Activity, Search,
   ChevronRight, Command, UploadCloud, Send, Save,
   Sun, Moon, RefreshCw, Square, Code2, FileCode, HeartPulse, RotateCw,
-  Database, Download, Cloud, HardDrive, BellOff
+  Database, Download, Cloud, HardDrive, BellOff, Menu
 } from 'lucide-react'
 import Editor from '@monaco-editor/react'
 import * as api from './api'
@@ -27,6 +27,9 @@ function App() {
   const [scripts, setScripts] = useState<Script[]>([]);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // 移动端侧边栏状态
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // 主题状态：从localStorage读取，默认为'light'
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -653,18 +656,43 @@ function App() {
       <div className={`fixed top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full blur-[100px] animate-float pointer-events-none transition-colors duration-500 ${theme === 'light' ? 'bg-blue-400/20' : 'bg-blue-600/10'}`} />
       <div className={`fixed bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full blur-[120px] animate-float-delayed pointer-events-none transition-colors duration-500 ${theme === 'light' ? 'bg-purple-400/20' : 'bg-purple-600/10'}`} />
 
-      <aside className={`w-64 flex-shrink-0 flex flex-col h-full z-20 relative transition-all duration-300 ${theme === 'light' ? 'glass-sidebar' : 'glass-sidebar-dark'}`}>
+      {/* 移动端遮罩层 */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* 移动端汉堡菜单按钮 */}
+      {!sidebarOpen && (
+        <button
+          className={`md:hidden fixed top-4 left-4 z-50 p-2.5 rounded-xl shadow-lg transition-all active:scale-95 ${theme === 'light' ? 'bg-white/90 text-gray-700' : 'bg-gray-800/90 text-white'}`}
+          onClick={() => setSidebarOpen(true)}
+        >
+          <Menu size={22} />
+        </button>
+      )}
+
+      <aside className={`
+        fixed md:relative inset-y-0 left-0 z-40
+        w-64 flex-shrink-0 flex flex-col h-full
+        transform transition-transform duration-300 ease-in-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:translate-x-0
+        ${theme === 'light' ? 'glass-sidebar' : 'glass-sidebar-dark'}
+      `}>
         <div className="p-8 pb-4 flex-1">
           <div className="flex items-center gap-3 mb-8">
             <img src="/icon.png" alt="Logo" className="w-10 h-10 rounded-xl shadow-md bg-orange-500 p-2 shrink-0" />
             <span className="font-bold text-xl tracking-tight whitespace-nowrap">ScriptsManager</span>
           </div>
-          
+
           <div className="space-y-1">
-            <SidebarItem icon={LayoutDashboard} label="仪表盘" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} theme={theme} />
-            <SidebarItem icon={Terminal} label="所有脚本" active={activeTab === 'scripts'} onClick={() => setActiveTab('scripts')} theme={theme} />
-            <SidebarItem icon={Database} label="备份管理" active={activeTab === 'backup'} onClick={() => setActiveTab('backup')} theme={theme} />
-            <SidebarItem icon={Settings} label="系统设置" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} theme={theme} />
+            <SidebarItem icon={LayoutDashboard} label="仪表盘" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setSidebarOpen(false); }} theme={theme} />
+            <SidebarItem icon={Terminal} label="所有脚本" active={activeTab === 'scripts'} onClick={() => { setActiveTab('scripts'); setSidebarOpen(false); }} theme={theme} />
+            <SidebarItem icon={Database} label="备份管理" active={activeTab === 'backup'} onClick={() => { setActiveTab('backup'); setSidebarOpen(false); }} theme={theme} />
+            <SidebarItem icon={Settings} label="系统设置" active={activeTab === 'settings'} onClick={() => { setActiveTab('settings'); setSidebarOpen(false); }} theme={theme} />
           </div>
         </div>
 
@@ -677,21 +705,21 @@ function App() {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto no-scrollbar relative z-10 p-8 pt-10">
+      <main className="flex-1 overflow-y-auto no-scrollbar relative z-10 p-4 pt-16 md:p-8 md:pt-10">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-end mb-10">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-6 md:mb-10">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1 md:mb-2">
                 {activeTab === 'dashboard' ? '仪表盘' : activeTab === 'scripts' ? '脚本管理' : activeTab === 'backup' ? '备份管理' : '系统设置'}
               </h1>
-              <p className={`${textSecondary} font-medium`}>
-                {activeTab === 'settings' ? '配置通知与系统参数' : activeTab === 'backup' ? '管理脚本备份和恢复' : `系统运行平稳，${stats.running} 个任务正在执行中。`}
+              <p className={`${textSecondary} font-medium text-sm md:text-base`}>
+                {activeTab === 'settings' ? '配置通知与系统参数' : activeTab === 'backup' ? '管理脚本备份和恢复' : `${stats.running} 个任务正在执行中`}
               </p>
             </div>
             {activeTab !== 'settings' && (
-              <div className="flex gap-3">
-                <button onClick={handleScan} className={`px-4 py-2.5 rounded-full font-medium transition-all active:scale-95 flex items-center gap-2 ${theme === 'light' ? 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm' : 'bg-white/10 text-white hover:bg-white/20'}`}><RefreshCw size={18} /><span>扫描文件</span></button>
-                <button onClick={() => setIsModalOpen(true)} className="bg-[#0071E3] hover:bg-[#0077ED] text-white px-5 py-2.5 rounded-full font-medium shadow-lg shadow-blue-500/30 transition-all active:scale-95 flex items-center gap-2"><Plus size={18} /><span>新建脚本</span></button>
+              <div className="flex flex-wrap gap-2 md:gap-3">
+                <button onClick={handleScan} className={`px-3 md:px-4 py-2 md:py-2.5 rounded-full font-medium transition-all active:scale-95 flex items-center gap-1.5 md:gap-2 text-sm md:text-base ${theme === 'light' ? 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm' : 'bg-white/10 text-white hover:bg-white/20'}`}><RefreshCw size={16} className="md:w-[18px] md:h-[18px]" /><span>扫描</span></button>
+                <button onClick={() => setIsModalOpen(true)} className="bg-[#0071E3] hover:bg-[#0077ED] text-white px-3 md:px-5 py-2 md:py-2.5 rounded-full font-medium shadow-lg shadow-blue-500/30 transition-all active:scale-95 flex items-center gap-1.5 md:gap-2 text-sm md:text-base"><Plus size={16} className="md:w-[18px] md:h-[18px]" /><span>新建</span></button>
               </div>
             )}
           </div>
@@ -699,7 +727,7 @@ function App() {
           {(activeTab === 'dashboard' || activeTab === 'scripts') && (
             <>
               {activeTab === 'dashboard' && (
-                <div className="grid grid-cols-3 gap-6 mb-10">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-10">
                   <StatCard label="总脚本数" value={stats.total} icon={FileText} color="bg-blue-500" panelClass={panelClass} theme={theme} />
                   <StatCard label="运行中" value={stats.running} icon={Loader2} color="bg-amber-500" panelClass={panelClass} theme={theme} />
                   <StatCard label="最近失败" value={stats.failed} icon={XCircle} color="bg-red-500" panelClass={panelClass} theme={theme} />
@@ -723,7 +751,7 @@ function App() {
                       </div>
 
                       {/* 过滤和排序行 */}
-                      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3">
                         {/* 类型过滤 */}
                         <select
                           value={filterType}
@@ -781,7 +809,7 @@ function App() {
                       </div>
 
                       {/* 视图切换和批量操作 */}
-                      <div className="flex items-center justify-between gap-4">
+                      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div className="flex gap-2">
                           <button
                             onClick={() => setViewMode('grid')}
@@ -815,7 +843,7 @@ function App() {
 
                         {/* 批量操作按钮 */}
                         {isMultiSelectMode && selectedScripts.size > 0 && (
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             <button
                               onClick={selectAllFiltered}
                               className={`px-3 py-2 rounded-lg text-sm font-medium ${theme === 'light' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-white/10 text-gray-300 hover:bg-white/20'}`}
@@ -1226,12 +1254,12 @@ function App() {
       {/* Code Editor Modal */}
       {isEditorOpen && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className={`${theme === 'light' ? 'bg-white' : 'bg-[#1c1c1e] text-white'} rounded-[32px] p-8 w-full max-w-5xl shadow-2xl scale-100 animate-in zoom-in-95 duration-200 h-[90vh] flex flex-col`}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold flex items-center gap-2"><Code2 size={24}/> 在线编辑代码</h2>
-              <div className="flex gap-3">
-                <button onClick={handleSaveCode} disabled={isSavingCode || isSavingAndRestarting} className="bg-[#0071E3] hover:bg-[#0077ED] text-white px-6 py-2 rounded-full font-bold flex items-center gap-2 disabled:opacity-50">{isSavingCode ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}<span>保存</span></button>
-                <button onClick={handleSaveAndRestartScript} disabled={isSavingCode || isSavingAndRestarting} className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full font-bold flex items-center gap-2 disabled:opacity-50">{isSavingAndRestarting ? <Loader2 size={18} className="animate-spin" /> : <RotateCw size={18} />}<span>保存并重启</span></button>
+          <div className={`${theme === 'light' ? 'bg-white' : 'bg-[#1c1c1e] text-white'} rounded-[24px] md:rounded-[32px] p-4 md:p-8 w-full max-w-5xl shadow-2xl scale-100 animate-in zoom-in-95 duration-200 h-[90vh] flex flex-col`}>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-6 gap-3 md:gap-0">
+              <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2"><Code2 size={24}/> 在线编辑代码</h2>
+              <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto justify-end">
+                <button onClick={handleSaveCode} disabled={isSavingCode || isSavingAndRestarting} className="bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 md:px-6 py-2 rounded-full font-bold text-sm md:text-base flex items-center gap-2 disabled:opacity-50 flex-grow md:flex-grow-0 justify-center">{isSavingCode ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}<span>保存</span></button>
+                <button onClick={handleSaveAndRestartScript} disabled={isSavingCode || isSavingAndRestarting} className="bg-orange-500 hover:bg-orange-600 text-white px-4 md:px-6 py-2 rounded-full font-bold text-sm md:text-base flex items-center gap-2 disabled:opacity-50 flex-grow md:flex-grow-0 justify-center">{isSavingAndRestarting ? <Loader2 size={18} className="animate-spin" /> : <RotateCw size={18} />}<span>保存并重启</span></button>
                 <button onClick={() => setIsEditorOpen(false)} className={`p-2 rounded-full transition-colors ${theme === 'light' ? 'hover:bg-gray-100' : 'hover:bg-white/10'}`}><X size={24} /></button>
               </div>
             </div>
@@ -1518,7 +1546,7 @@ const ScriptCard = ({ script, onRunToggle, onEdit, onDelete, onLog, onOpenEditor
               <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">{script.cron === '@daemon' ? '常驻服务' : script.cron ? '定时任务' : '手动触发'}</p>
             </div>
           </div>
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+          <div className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex gap-2">
             <button onClick={(e) => { e.stopPropagation(); onLog(); }} title="View Log" className={`p-2 rounded-full transition-colors ${theme === 'light' ? 'bg-blue-50 hover:bg-blue-100 text-blue-600' : 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400'}`}><FileText size={16} /></button>
             <button onClick={(e) => { e.stopPropagation(); onOpenEditor(); }} title="Edit Code" className={`p-2 rounded-full transition-colors ${theme === 'light' ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-600' : 'bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400'}`}><Code2 size={16} /></button>
             <button onClick={(e) => { e.stopPropagation(); onEdit(); }} title="Settings" className={`p-2 rounded-full transition-colors ${theme === 'light' ? 'bg-gray-100 hover:bg-gray-200 text-gray-600' : 'bg-white/10 hover:bg-white/20 text-gray-300'}`}><Edit2 size={16} /></button>
@@ -1593,7 +1621,7 @@ const ScriptCard = ({ script, onRunToggle, onEdit, onDelete, onLog, onOpenEditor
       </div>
 
       {/* 操作按钮 */}
-      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 flex-shrink-0">
+      <div className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex gap-1 flex-shrink-0">
         <button onClick={(e) => { e.stopPropagation(); onLog(); }} title="View Log" className={`p-1.5 rounded transition-colors ${theme === 'light' ? 'bg-blue-50 hover:bg-blue-100 text-blue-600' : 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400'}`}><FileText size={14} /></button>
         <button onClick={(e) => { e.stopPropagation(); onOpenEditor(); }} title="Edit Code" className={`p-1.5 rounded transition-colors ${theme === 'light' ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-600' : 'bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400'}`}><Code2 size={14} /></button>
         <button onClick={(e) => { e.stopPropagation(); onEdit(); }} title="Settings" className={`p-1.5 rounded transition-colors ${theme === 'light' ? 'bg-gray-100 hover:bg-gray-200 text-gray-600' : 'bg-white/10 hover:bg-white/20 text-gray-300'}`}><Edit2 size={14} /></button>
