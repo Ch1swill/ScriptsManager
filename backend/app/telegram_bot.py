@@ -204,7 +204,7 @@ class TelegramBot:
             await self.send_message(f"⚠️ *异常警报：* 发现 {len(issues)} 个常驻脚本已失效。" )
 
     async def show_script_log(self, script_id):
-        log_path = f"/app/data/logs/{script_id}.log"
+        log_path = f"/data/logs/{script_id}.log"
         content = "🏮 尚未产生日志文件。"
         try:
             import os

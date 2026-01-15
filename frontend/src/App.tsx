@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Terminal, Activity, Search,
   ChevronRight, Command, UploadCloud, Send, Save,
   Sun, Moon, RefreshCw, Square, Code2, FileCode, HeartPulse, RotateCw,
-  Database, Download, Cloud, HardDrive
+  Database, Download, Cloud, HardDrive, BellOff
 } from 'lucide-react'
 import Editor from '@monaco-editor/react'
 import * as api from './api'
@@ -60,6 +60,7 @@ function App() {
     proxy: api.getSettings('tg_proxy') || ''
   });
   const [enableHealthCheck, setEnableHealthCheck] = useState(false);
+  const [tgNotifyOnFailureOnly, setTgNotifyOnFailureOnly] = useState(false);
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
 
@@ -125,6 +126,7 @@ function App() {
         proxy: settings.tg_proxy || ''
       });
       setEnableHealthCheck(settings.enable_health_check === 'true');
+      setTgNotifyOnFailureOnly(settings.tg_notify_on_failure_only === 'true');
     } catch (err) {
       console.error("Failed to fetch data", err);
     }
@@ -481,6 +483,7 @@ function App() {
         await api.saveSettings('tg_chat_id', tgConfig.chatId);
         await api.saveSettings('tg_proxy', tgConfig.proxy);
         await api.saveSettings('enable_health_check', String(enableHealthCheck));
+        await api.saveSettings('tg_notify_on_failure_only', String(tgNotifyOnFailureOnly));
 
         // 最后统一应用并重启 Bot
         await api.applySettings();
@@ -908,6 +911,17 @@ function App() {
                     <label className="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" className="sr-only peer" checked={enableHealthCheck} onChange={e => setEnableHealthCheck(e.target.checked)} />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <BellOff size={20} className="text-orange-500" />
+                        <span className={`font-semibold ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>仅失败时通知</span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" checked={tgNotifyOnFailureOnly} onChange={e => setTgNotifyOnFailureOnly(e.target.checked)} />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
                     </label>
                   </div>
 

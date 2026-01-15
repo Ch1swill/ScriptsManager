@@ -35,7 +35,7 @@ COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
 # 设置环境变量
 ENV SCRIPT_ROOT=/scripts
-ENV DATABASE_URL=sqlite:///app/data/manager.db
+ENV DATABASE_URL=sqlite:////data/manager.db
 
 # 暴露端口 4396
 EXPOSE 4396

@@ -89,7 +89,7 @@ async def stop_script(script_id: int):
 
 async def run_script(script_id: int, script_path: str, script_name: str, bot_token: str = None, chat_id: str = None, arguments: str = None, is_daemon: bool = False):
     # 准备日志文件 - 尽早创建，确保能记录所有错误
-    log_dir = "/app/data/logs"
+    log_dir = "/data/logs"
     os.makedirs(log_dir, exist_ok=True)
     log_file_path = os.path.join(log_dir, f"{script_id}.log")
     start_time = datetime.datetime.now()
@@ -204,10 +204,20 @@ async def run_script(script_id: int, script_path: str, script_name: str, bot_tok
             db.commit()
             
         logger.info(f"Script {script_name} finished with status: {status}")
-        
+
         if bot_token and chat_id and not is_daemon:
-            msg = f"🚀 脚本: {script_name}\n状态: {status}\n耗时: {datetime.datetime.now() - start_time}"
-            await notify_telegram(msg, bot_token, chat_id)
+            # 检查是否仅失败时通知
+            notify_on_failure_only_setting = db.query(models.Setting).filter(
+                models.Setting.key == "tg_notify_on_failure_only"
+            ).first()
+            notify_on_failure_only = notify_on_failure_only_setting and notify_on_failure_only_setting.value == 'true'
+
+            # 如果开启了仅失败通知，且状态是成功，则跳过通知
+            if notify_on_failure_only and status == "success":
+                logger.info(f"Skipping success notification for {script_name} (notify_on_failure_only enabled)")
+            else:
+                msg = f"🚀 脚本: {script_name}\n状态: {status}\n耗时: {datetime.datetime.now() - start_time}"
+                await notify_telegram(msg, bot_token, chat_id)
             
     except Exception as e:
         import traceback

@@ -9,7 +9,7 @@ services:
       # 脚本目录
       - ./scripts:/scripts
       # 持久化数据 (数据库和日志)
-      - ./backend/data:/app/data
+      - ./data:/data
       # 开发模式: 热重载后端代码
       # - ./backend/app:/app/app
       # 可选: 挂载外部存储以便脚本访问

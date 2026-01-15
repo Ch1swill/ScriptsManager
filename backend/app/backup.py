@@ -11,7 +11,7 @@ from . import models
 logger = logging.getLogger(__name__)
 
 # 备份目录
-BACKUP_DIR = "/app/data/backups"
+BACKUP_DIR = "/data/backups"
 os.makedirs(BACKUP_DIR, exist_ok=True)
 
 

@@ -87,7 +87,7 @@ async def delete_script(script_id: int, db: Session = Depends(get_db)):
             raise HTTPException(status_code=500, detail=f"Failed to delete script file: {str(e)}")
 
     # 删除对应的日志文件
-    log_file = f"/app/data/logs/{script_id}.log"
+    log_file = f"/data/logs/{script_id}.log"
     if os.path.exists(log_file):
         try:
             os.remove(log_file)
@@ -202,7 +202,7 @@ async def stop_script_manually(script_id: int, db: Session = Depends(get_db)):
 @router.websocket("/logs/{script_id}/stream")
 async def websocket_log_stream(websocket: WebSocket, script_id: int):
     await websocket.accept()
-    log_file_path = f"/app/data/logs/{script_id}.log"
+    log_file_path = f"/data/logs/{script_id}.log"
     
     try:
         # 等待文件创建 (如果刚启动)
