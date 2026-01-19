@@ -12,7 +12,7 @@ services:
       # 脚本目录
       - ./scripts:/scripts
       # 持久化数据 (数据库和日志)
-      - ./data:/app/data
+      - ./data:/data
       # 可选: 挂载外部存储以便脚本访问
       # - /mnt:/mnt
     environment:

@@ -10,8 +10,6 @@ services:
       - ./scripts:/scripts
       # 持久化数据 (数据库和日志)
       - ./data:/data
-      # 开发模式: 热重载后端代码
-      # - ./backend/app:/app/app
       # 可选: 挂载外部存储以便脚本访问
       # - /mnt:/mnt
     environment:

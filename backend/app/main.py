@@ -13,11 +13,60 @@ app = FastAPI(title="ScriptsManager API")
 
 from .api import sync_scripts_from_disk
 from . import telegram_bot
+from . import backup as backup_module
+
+
+async def run_scheduled_local_backup():
+    """模块级别的本地备份定时任务函数"""
+    try:
+        result = backup_module.backup_and_upload(script_ids=None, backup_type='local', cd2_config=None)
+        if result['success']:
+            print(f"Scheduled Local Backup completed: {result['filename']}")
+        else:
+            print(f"Scheduled Local Backup failed: {result.get('error')}")
+    except Exception as e:
+        print(f"Scheduled Local Backup error: {e}")
+
+
+async def run_scheduled_cd2_backup():
+    """模块级别的 CD2 备份定时任务函数 - 从数据库读取最新配置"""
+    try:
+        db = SessionLocal()
+        try:
+            cd2_url = db.query(models.Setting).filter(models.Setting.key == "cd2_webdav_url").first()
+            cd2_username = db.query(models.Setting).filter(models.Setting.key == "cd2_username").first()
+            cd2_password = db.query(models.Setting).filter(models.Setting.key == "cd2_password").first()
+            cd2_path = db.query(models.Setting).filter(models.Setting.key == "cd2_backup_path").first()
+
+            if not cd2_url or not cd2_username or not cd2_password:
+                print("Scheduled CD2 Backup skipped: config incomplete")
+                return
+
+            cd2_config = {
+                'webdav_url': cd2_url.value,
+                'username': cd2_username.value,
+                'password': cd2_password.value,
+                'backup_path': cd2_path.value if cd2_path else '/ScriptBackups'
+            }
+        finally:
+            db.close()
+
+        result = backup_module.backup_and_upload(
+            script_ids=None,
+            backup_type='clouddrive',
+            cd2_config=cd2_config
+        )
+        if result['success']:
+            print(f"Scheduled CD2 Backup completed: {result.get('remote_path')}")
+        else:
+            print(f"Scheduled CD2 Backup failed: {result.get('error')}")
+    except Exception as e:
+        print(f"Scheduled CD2 Backup error: {e}")
+
 
 def update_scheduled_backup(db=None):
     """更新定时备份任务（可在运行时调用）"""
     from apscheduler.triggers.cron import CronTrigger
-    from . import backup as backup_module
 
     close_db = False
     if db is None:
@@ -35,18 +84,8 @@ def update_scheduled_backup(db=None):
         local_cron = db.query(models.Setting).filter(models.Setting.key == "local_backup_cron").first()
 
         if local_enabled and local_enabled.value == "true" and local_cron and local_cron.value:
-            async def scheduled_local_backup_task():
-                try:
-                    result = backup_module.backup_and_upload(script_ids=None, backup_type='local', cd2_config=None)
-                    if result['success']:
-                        print(f"Scheduled Local Backup completed: {result['filename']}")
-                    else:
-                        print(f"Scheduled Local Backup failed: {result.get('error')}")
-                except Exception as e:
-                    print(f"Scheduled Local Backup error: {e}")
-
             scheduler.scheduler.add_job(
-                scheduled_local_backup_task,
+                run_scheduled_local_backup,
                 CronTrigger.from_crontab(local_cron.value),
                 id='scheduled_local_backup'
             )
@@ -55,39 +94,16 @@ def update_scheduled_backup(db=None):
         # === 2. 配置CloudDrive2备份定时任务 ===
         cd2_enabled = db.query(models.Setting).filter(models.Setting.key == "cd2_backup_enabled").first()
         cd2_cron = db.query(models.Setting).filter(models.Setting.key == "cd2_backup_cron").first()
-        
-        # 预读取 CD2 配置
-        cd2_url = db.query(models.Setting).filter(models.Setting.key == "cd2_webdav_url").first()
-        cd2_username = db.query(models.Setting).filter(models.Setting.key == "cd2_username").first()
-        cd2_password = db.query(models.Setting).filter(models.Setting.key == "cd2_password").first()
-        cd2_path = db.query(models.Setting).filter(models.Setting.key == "cd2_backup_path").first()
 
         if cd2_enabled and cd2_enabled.value == "true" and cd2_cron and cd2_cron.value:
-            # 确保配置完整
-            if cd2_url and cd2_username and cd2_password:
-                cd2_config_data = {
-                    'webdav_url': cd2_url.value,
-                    'username': cd2_username.value,
-                    'password': cd2_password.value,
-                    'backup_path': cd2_path.value if cd2_path else '/ScriptBackups'
-                }
-                
-                async def scheduled_cd2_backup_task():
-                    try:
-                        result = backup_module.backup_and_upload(
-                            script_ids=None, 
-                            backup_type='clouddrive', 
-                            cd2_config=cd2_config_data
-                        )
-                        if result['success']:
-                            print(f"Scheduled CD2 Backup completed: {result.get('remote_path')}")
-                        else:
-                            print(f"Scheduled CD2 Backup failed: {result.get('error')}")
-                    except Exception as e:
-                        print(f"Scheduled CD2 Backup error: {e}")
+            # 检查配置是否完整
+            cd2_url = db.query(models.Setting).filter(models.Setting.key == "cd2_webdav_url").first()
+            cd2_username = db.query(models.Setting).filter(models.Setting.key == "cd2_username").first()
+            cd2_password = db.query(models.Setting).filter(models.Setting.key == "cd2_password").first()
 
+            if cd2_url and cd2_username and cd2_password:
                 scheduler.scheduler.add_job(
-                    scheduled_cd2_backup_task,
+                    run_scheduled_cd2_backup,
                     CronTrigger.from_crontab(cd2_cron.value),
                     id='scheduled_cd2_backup'
                 )
