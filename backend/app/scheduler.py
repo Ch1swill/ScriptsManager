@@ -9,7 +9,12 @@ import shlex
 from .database import SessionLocal
 from . import models
 
-scheduler = AsyncIOScheduler()
+scheduler = AsyncIOScheduler(
+    job_defaults={
+        'misfire_grace_time': 3600,  # 允许任务延迟最多1小时仍执行
+        'coalesce': True,  # 合并错过的多次执行为一次
+    }
+)
 logger = logging.getLogger(__name__)
 
 # 全局字典存储运行中的进程: script_id -> subprocess.Process

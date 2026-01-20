@@ -5,6 +5,9 @@ from fastapi.responses import FileResponse
 from .database import engine, SessionLocal, Base
 from . import models, api, scheduler
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # 创建数据库表
 Base.metadata.create_all(bind=engine)
@@ -18,18 +21,20 @@ from . import backup as backup_module
 
 async def run_scheduled_local_backup():
     """模块级别的本地备份定时任务函数"""
+    logger.info("Scheduled Local Backup: Task started")
     try:
         result = backup_module.backup_and_upload(script_ids=None, backup_type='local', cd2_config=None)
         if result['success']:
-            print(f"Scheduled Local Backup completed: {result['filename']}")
+            logger.info(f"Scheduled Local Backup completed: {result['filename']}")
         else:
-            print(f"Scheduled Local Backup failed: {result.get('error')}")
+            logger.error(f"Scheduled Local Backup failed: {result.get('error')}")
     except Exception as e:
-        print(f"Scheduled Local Backup error: {e}")
+        logger.exception(f"Scheduled Local Backup error: {e}")
 
 
 async def run_scheduled_cd2_backup():
     """模块级别的 CD2 备份定时任务函数 - 从数据库读取最新配置"""
+    logger.info("Scheduled CD2 Backup: Task started")
     try:
         db = SessionLocal()
         try:
@@ -39,7 +44,7 @@ async def run_scheduled_cd2_backup():
             cd2_path = db.query(models.Setting).filter(models.Setting.key == "cd2_backup_path").first()
 
             if not cd2_url or not cd2_username or not cd2_password:
-                print("Scheduled CD2 Backup skipped: config incomplete")
+                logger.warning("Scheduled CD2 Backup skipped: config incomplete")
                 return
 
             cd2_config = {
@@ -57,11 +62,11 @@ async def run_scheduled_cd2_backup():
             cd2_config=cd2_config
         )
         if result['success']:
-            print(f"Scheduled CD2 Backup completed: {result.get('remote_path')}")
+            logger.info(f"Scheduled CD2 Backup completed: {result.get('remote_path')}")
         else:
-            print(f"Scheduled CD2 Backup failed: {result.get('error')}")
+            logger.error(f"Scheduled CD2 Backup failed: {result.get('error')}")
     except Exception as e:
-        print(f"Scheduled CD2 Backup error: {e}")
+        logger.exception(f"Scheduled CD2 Backup error: {e}")
 
 
 def update_scheduled_backup(db=None):
@@ -89,7 +94,9 @@ def update_scheduled_backup(db=None):
                 CronTrigger.from_crontab(local_cron.value),
                 id='scheduled_local_backup'
             )
-            print(f"Registered Scheduled Local Backup: {local_cron.value}")
+            logger.info(f"Registered Scheduled Local Backup: {local_cron.value}")
+        else:
+            logger.info(f"Local Backup not scheduled: enabled={local_enabled.value if local_enabled else None}, cron={local_cron.value if local_cron else None}")
 
         # === 2. 配置CloudDrive2备份定时任务 ===
         cd2_enabled = db.query(models.Setting).filter(models.Setting.key == "cd2_backup_enabled").first()
@@ -107,14 +114,14 @@ def update_scheduled_backup(db=None):
                     CronTrigger.from_crontab(cd2_cron.value),
                     id='scheduled_cd2_backup'
                 )
-                print(f"Registered Scheduled CD2 Backup: {cd2_cron.value}")
+                logger.info(f"Registered Scheduled CD2 Backup: {cd2_cron.value}")
             else:
-                print("Scheduled CD2 Backup enabled but config missing")
+                logger.warning("Scheduled CD2 Backup enabled but config missing")
+        else:
+            logger.info(f"CD2 Backup not scheduled: enabled={cd2_enabled.value if cd2_enabled else None}, cron={cd2_cron.value if cd2_cron else None}")
 
     except Exception as e:
-        print(f"Failed to update scheduled backup: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.exception(f"Failed to update scheduled backup: {e}")
     finally:
         if close_db:
             db.close()
